@@ -3,6 +3,7 @@ use std::{
     path::PathBuf,
 };
 
+use directories::ProjectDirs;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -19,15 +20,21 @@ impl Default for AppConfig {
 }
 
 impl AppConfig {
+    pub fn get_path() -> PathBuf {
+        let project_dirs = ProjectDirs::from("", "", "Godot Forwarder")
+            .expect("Couldn't generate config file path");
+        let mut path = project_dirs.config_dir().to_path_buf();
+        path.set_extension("toml");
+        return path;
+    }
+
     pub fn load_or_create(path: PathBuf) -> Self {
-        let config = match Self::load_from_file(&path) {
-            Some(loaded_config) => loaded_config,
-            None => {
-                let new_config = AppConfig::default();
-                fs::write(&path, toml::to_string_pretty(&new_config).unwrap()).unwrap();
-                return new_config;
-            }
-        };
+        let config = Self::load_from_file(&path).unwrap_or_else(|| {
+            let new_config = AppConfig::default();
+            fs::create_dir_all(&path.parent().unwrap()).expect("Could not create config directory");
+            fs::write(&path, toml::to_string_pretty(&new_config).unwrap()).unwrap();
+            return new_config;
+        });
         return config;
     }
 

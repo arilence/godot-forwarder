@@ -6,7 +6,7 @@ use std::{env, fs};
 mod config;
 
 fn main() {
-    let config_location = PathBuf::from("./config.toml");
+    let config_location = config::AppConfig::get_path();
     let config = config::AppConfig::load_or_create(config_location);
 
     // Only open Godot if we're executing from the steamapps folder
