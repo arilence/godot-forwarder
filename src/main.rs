@@ -6,17 +6,27 @@ use std::{env, fs};
 mod config;
 
 fn main() {
+    println!("Welcome to Godot Forwarder");
     let config_location = config::AppConfig::get_path();
     let config = config::AppConfig::load_or_create(config_location);
 
+    print_command_arguments();
+
     // Only open Godot if we're executing from the steamapps folder
     if is_steamapps(&config.steamapps_directory) {
+        println!("Steamapps detected\nOpening Godot Engine");
         open_godot(&config.steamapps_directory);
         return;
     }
 
     // If we're executing from anywhere else, install us into the steamapps folder
+    println!("Not executing from Steamapps\nInstalling now");
     install(&config.steamapps_directory);
+}
+
+fn print_command_arguments() {
+    let args: Vec<String> = env::args().collect();
+    println!("Command line arguments: {:?}", args);
 }
 
 fn is_steamapps(steamapps_directory: &PathBuf) -> bool {
@@ -79,6 +89,8 @@ fn open_godot(steamapps_directory: &PathBuf) {
 
     let godot_exe_string = godot_exe.into_os_string().into_string().unwrap();
 
+    // TODO: Get powershell location instead of assuming powershell 7
+    // We should use an absolute location instead of simply `pwsh.exe` to avoid potential malicious behaviour
     let output = Command::new(r"C:\Program Files\PowerShell\7\pwsh.exe")
         .args([
             "-Command",
@@ -88,7 +100,8 @@ fn open_godot(steamapps_directory: &PathBuf) {
             "-NoNewWindow",
             "-Wait",
             "-ArgumentList",
-            "'-p'",
+            // TODO: Read launch options from steam rather than hardcoding here
+            "\"--path $($env:userprofile) -p\"",
         ])
         .output()
         .expect("Failed to execute child process");
